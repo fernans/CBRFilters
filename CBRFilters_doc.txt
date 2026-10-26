@@ -1,0 +1,203 @@
+Libreria CBRFilters
+
+version 5:
+corregido orientacion (por bug adobe-air camara en moviles)
+
+------------------------------------------------------------
+
+public class CBRFilters extends Sprite
+  se puede añadir al DisplayList como cualquier otro objeto.
+  se puede cambiar de posicion
+  al ajustar su tamaño/scala.. el contenido se escala.
+    (la resolucion de camara solo se puede cambiar al crear el objeto)
+  se puede hacer visible/invisible.
+    (se recomienda cambiar el modo a MODO_NONE cuando no se vaya a utilizar la camara)
+
+------------------------------------------------------------
+
+Ejemplo basico de uso:
+
+(añadir CBRFilters.swc en el dialogo de Script > Configruacion Avanzada de Script > Ruta de bibliotecas)
+
+import com.fernans.cbr.CBRFilters;		// importar clase
+
+var cbr:CBRFilters=new CBRFilters();		// constructor : resolucion por defecto 320x240
+addChild(cbr);				// agregar al displayList (muestra cuadro en negro)
+cbr.setFilter(CBRFilters.FILTER.XRAY);		// selecciona y precarga una configuracion de filtro
+cbr.setMode(CBRFilters.MODE_FULL);		// activa la camara y el proceso (modo completo)
+cbr.setFps(true);				// calcula y muestra en una esquina los FPS que está obteniendo
+
+------------------------------------------------------------
+
+Constantes de clase: (static)
+
+MODE_NONE	:	camara apagada (imagen en negro)
+MODE_VIDEO	:	camara encendida, sin filtros (imagen limpia)
+MODE_BASIC	:	filtros basicos (para probar si con lookup queda lento)
+MODE_FULL	:	filtros completos (mezcla de canales y tablas lookup)
+
+FILTER_NONE	:	filtro neutro (imagen limpia)
+FILTER_XRAY	:	filtro de Rayos X
+FILTER_UV	:	filtro de UltraVioleta
+FILTER_INFRARED	:	filtro de InfraRojos
+FILTER_CBR	:	filtro de CBR (alpha por luz, con imagen de fondo giratoria)
+
+Constantes de instancia: (const)
+UMBRAL_CHANGE   :	identifica evento cuando el usuario pulsa en la imagen (y se auto ajusta el umbral)
+
+<deprecated>
+( CBRMODE_DAY      :	modo alfa para dia (brillo es transparente)          )
+( CBRMODE_NIGHT   :            modo alfa para noche (oscuro es transparente) )
+
+
+none es limpio
+  el resto es
+  imagen en escala de gris (filtro basico)
+  con imagen invertida (por filtro completo - lookup)
+cbr es
+  imagen limpia con alpha por luz
+  se muestra imagen de fondo
+  el umbral se ajusta por touch
+  se eliminaran claros y oscuros (mas allá del margen desde el umbral)
+
+------------------------------------------------------------
+
+Constructor:
+
+CBRFilters(camWidth=320, camHeigh=240, camFps=30, camId=0);
+
+camWidth y camHeight (y camFps).
+El objeto se creará a este tamaño (inicialmente MODE_NONE, muestra cuadro negro)
+
+Cuando se cambia a otro modo, se activa la camara
+(Nota: puede que la camara no dé exactamente esa resolucion ni velocidad, segun pueda el hardware)
+
+El ID sirve para seleccionar la camara
+Id=0 suele ser la 1a del dispositivo, camara trasera.
+Id=1 suele ser la 2a del dispositivo, camara frontal (de menor resolucion/velocidad)
+
+------------------------------------------------------------
+
+public function selectCamera(camId:Number, camWidth:Number=NaN, camHeight:Number=NaN, camFps:Number=NaN) 
+  cambia la configuracion de camara.
+  Es obligado indicar el Id de camara (0=por defecto, principal, trasera : 1=secundaria, la frontal)	
+  el resto de valores (si se omiten) se matienen los indicados en el constructor (o anteriores llamadas a selectCamera)
+  si habia un modo activo (distinto a MODE_NONE), se restaura. (se vuelve a activar tras el cambio de camara)
+		
+
+public setMode(mode=MODE_NONE)
+  activa/desactiva la camara.
+  indica en nivel de filtro a usar (VIDEO=ninguno, BASIC=mezcla canales, FULL=lookup tables)
+
+----------
+
+public setFilter(filter=FILTER_NONE)
+  activa la configuracion de filtro a aplicar
+  carga en memoria tanto la mezcla de canales como la tabla, aunque no se usen (segun setMode)
+
+<deprecated>
+public setCBRmode(mode=CBRMODE_DAY)
+  indica el modo a usar para el alfa en modo CBR.
+  (a aplicar manualmente por la App, segun la hora del dispositivo)
+
+public setCBRlevel(level=128)
+  valor inicial a usar como umbral.
+  Estando activo el FILTER_CBR, un click ajusta automaticamente este valor.
+  (a usar como valor inicial/default antes de que el usuario haga click)
+
+public getCBRlevel():Number
+  devuelve el valor actual de umbral
+
+*** Cuando el usuario pulsa en la imagen y se auto-ajusta el umbral, se emite un evento UMBRAL_CHANGE ***
+
+public setCBRmargin(margin=12)
+  valor a usar como margen (distancia de brillo) respecto al umbral.
+  se verá transparente desde el valor umbral hasta +-50% de este margin
+  a partir de aqui... irá volviendose opaco.
+  lo que esté al +-100% de de este margin, será completamente opaco.
+  (Ej:   level=128 y margin=12 :: pixel 128(-0)=transparente, pixel 122(-6) transparente, pixel 119(-9) 50% transparente, pixel 116(-12) opaco. )
+
+public getCBRmargin():Number
+  devuelve el valor actual de umbral
+
+public function setCBRImage(d:DisplayObject=null) 
+  Sustituye la imagen a mostrar en la esfera CBR.
+  (recordar, debe ser una imagen cuadrada, en formato Polar)		
+
+public function get/set CBRScale:Number
+  establece la escala de la imagen de esfera CBR.
+  (puede ajustarse a contenido propio, o a la imagen por defecto inicial)
+
+----------
+
+public setFps(active=true)
+  activa/desactiva la medicion de fps (para debug)
+  inicia un timer cada segundo, y lleva la cuena de frames mostrados
+  Muestra un texto en la esquina superior izquierda con el ultimo valor de Fps
+
+public getFps():Number
+  devuelve el ultimo valor de Fps medidos
+  inicialmente devuelve 0, hay que esperar al menos 1 segundo para tener algun valor
+  si setFps no está activa, siempre devuelve Number::NaN
+
+------------------------------------------------------------
+
+public debugMode:Boolean=true;
+
+si esta variable es true, se escribiran textos en el trace.
+poner a false si no se quieren salidas a trace de esta libreria.
+
+------------------------------------------------------------
+
+public var offsetX:Number=0;
+public var offsetY:Number=0;
+public var offsetZ:Number=90;
+public var offsetH:Number=-90;
+
+valores de offset para las mediciones recibidas de acelerometros y brujula.
+el acelerometro está pensado para dar 0 al mirar al frente	,
+  para ver el centro de la imagen cbr(polo norte) al mirar al cielo, se aplica un offsetZ=90
+la brujula da valor 0 cuando mira al norte, pero internamente los angulos empiezan con 0 a la derecha
+  para ver la zona superior de la imagen (como eje norte), se aplica un offsetH=-90
+
+	
+public var smoothH:Number=0.5;
+public var smoothAlt:Number=0.5;
+public var smoothAng:Number=0.5;
+
+valores para suavizado de los movimientos (detectados por acelerometros y brujula)
+aplicar valores entre [0..1[   (sin llegar a poner un 1)
+  un valor 0 significa sin suavizado (se toma 0% del valor anterior, resultando en una aplicacion directa del nuevo dato)
+  un valor 1 significa suavizado maximo (se aplica 100% el valor anterio, resultando en no usar el valor nuevo, se bloquea)
+La escala se comporta de forma logarítmica.
+  (teniendo un suavizado de 0.5, el doble de suavizado seria en 0.75)
+  (pensar en este valor como "la inversa de 1-frames que se tardará en llegar al valor nuevo")
+  (   ej: smooth=0.5   -> (1-smooth)=0.5  -> inversa=2  : se tardarán   2 frames en llegar al nuevo valor )
+  (   ej: smooth=0.75 -> (1-smooth)=0.25 -> inversa=4  : se tardarán   4 frames en llegar al nuevo valor )
+  (   ej: smooth=0.9   -> (1-smooth)=0.1  -> inversa=10 : se tardarán 10 frames en llegar al nuevo valor )
+
+
+public var snapH:Number=10;
+public var snapAlt:Number=10;
+public var snapAng:Number=10;
+
+valores para "snap" de los movimientos
+separados para horizontal (snapH "heading"), vertical (snapAlt, "altitude"), giro (snapAng, "tilt")
+Si el desfase entre el ultimo frame y el actual es menor a este valor indicado (snap), no se aplicará el movimiento (se mantiene en el ultimo valor)
+Cuando el desfase entre el ultimo frame y el actual es igual o mayor, se aplica el movimiento como antes (incluyendo el smooth)
+- Puede ocasionar movimiento escalonado.
+  Ej: suponiendo un valor de snap 5, y suponiendo una posicion inicial 0
+  un movimiento lento (hasta 2), no mueve la imagen y se mantiene en 0.
+  movimiento lento (hasta 4), sigue sin mover la imagen, y se mantiene en 0.
+  movimiento lento (hasta 6), salta el umbral, y realiza todo el movimiento... hasta 6 (de golpe, o con el smooth)
+  movimiento lento (hasta 8), no mueve la imagen, y se mantiene en 6.
+  movimiento lento (hasta 10), sigue sin mover la imagen, y se mantiene en 6.
+  movimiento lento (hasta 12), salta el umbral, y realiza todo el movimiento.. hasta 12 (de golpe, o con el smooth)
+- Por tanto...
+  movimientos leves, te mantiene fijo.
+  (si se tiembla... los movimientos a positivo y negativo se ven compensados y eliminados)
+  movimientos bruscos, te mueve de golpe (o con el smooth)
+  movimientos leves continuos, puede generar un movimiento escalonado.
+
+
+  

@@ -1,0 +1,21 @@
+# Recursos de metadatos de sistema/macOS (resource forks)
+._*
+.DS_Store
+
+# Basura de compilación AOT/animación intermedia (Adobe AIR/iOS)
+*.tmp
+AOTBuildOutput2250019756762261038.tmp/
+temp_xml_plist_file.xml
+
+# Compilados entregables (publicados como assets del Release v1.0.0, no en el repo)
+CBRFilters.ipa
+CBRFilters.swc
+CBRFilters.swf
+
+# Histórico de entregas en ZIP (publicadas como assets del Release v1.0.0)
+filtros_swc_withSource.zip
+filtros_swc_2b.zip
+filtros_swc_3.zip
+filtros_swc_4.zip
+filtros_swc_5.zip
+filtros_swc_5_withSource.zip
